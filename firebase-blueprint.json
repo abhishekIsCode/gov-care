@@ -1,0 +1,61 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Public profile information for doctors and admins.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["doctor", "admin"] },
+        "specialty": { "type": "string" },
+        "licenseNumber": { "type": "string" }
+      },
+      "required": ["uid", "name", "role"]
+    },
+    "Patient": {
+      "title": "Patient Record",
+      "description": "Medical record for a patient.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "age": { "type": "integer" },
+        "condition": { "type": "string" },
+        "gender": { "type": "string" },
+        "contactEmail": { "type": "string", "format": "email" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string" }
+      },
+      "required": ["name", "age", "condition", "createdBy"]
+    },
+    "Appointment": {
+      "title": "Appointment",
+      "description": "Scheduled medical appointment.",
+      "type": "object",
+      "properties": {
+        "patientId": { "type": "string" },
+        "patientName": { "type": "string" },
+        "doctorId": { "type": "string" },
+        "doctorName": { "type": "string" },
+        "appointmentTime": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["scheduled", "in-progress", "completed", "cancelled"] },
+        "notes": { "type": "string" }
+      },
+      "required": ["patientId", "doctorId", "appointmentTime", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Collection of user profiles."
+    },
+    "/patients/{patientId}": {
+      "schema": "Patient",
+      "description": "Medical records accessible by healthcare providers."
+    },
+    "/appointments/{appointmentId}": {
+      "schema": "Appointment",
+      "description": "Schedule of consultations."
+    }
+  }
+}

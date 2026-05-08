@@ -1,0 +1,116 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isEmailVerified() && (
+        request.auth.token.email == 'abhishekcscode@gmail.com' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+    }
+
+    // --- Validation Blueprints ---
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'name', 'role']) &&
+             data.keys().size() <= 5 && // Allow for specialty and licenseNumber
+             data.uid == request.auth.uid &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.role in ['doctor', 'admin'] &&
+             (!('specialty' in data) || (data.specialty is string && data.specialty.size() <= 100)) &&
+             (!('licenseNumber' in data) || (data.licenseNumber is string && data.licenseNumber.size() <= 50));
+    }
+
+    function isValidPatient(data) {
+      return data.keys().hasAll(['name', 'age', 'condition', 'createdBy', 'createdAt']) &&
+             data.keys().size() <= 7 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.age is int && data.age >= 0 && data.age <= 150 &&
+             data.condition is string && data.condition.size() <= 500 &&
+             data.createdBy == request.auth.uid &&
+             data.createdAt == request.time &&
+             (!('gender' in data) || (data.gender is string && data.gender.size() <= 20)) &&
+             (!('contactEmail' in data) || (data.contactEmail is string && data.contactEmail.size() <= 100));
+    }
+
+    function isValidAppointment(data) {
+      return data.keys().hasAll(['patientId', 'patientName', 'doctorId', 'doctorName', 'appointmentTime', 'status']) &&
+             data.keys().size() <= 7 &&
+             isValidId(data.patientId) &&
+             isValidId(data.doctorId) &&
+             data.patientName is string && data.patientName.size() > 0 && data.patientName.size() <= 100 &&
+             data.doctorName is string && data.doctorName.size() > 0 && data.doctorName.size() <= 100 &&
+             data.appointmentTime is timestamp &&
+             data.status in ['scheduled', 'in-progress', 'completed', 'cancelled'] &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 1000));
+    }
+
+    // --- Collection Matches ---
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) && isValidUser(incoming()) && (
+        // Prevent changing role/uid
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'specialty', 'licenseNumber']) &&
+        incoming().role == existing().role
+      ) || isAdmin();
+    }
+
+    match /patients/{patientId} {
+      allow get: if isEmailVerified();
+      allow list: if isEmailVerified(); // Forced filter by doctor would be better but clinic is shared
+      allow create: if isEmailVerified() && isValidId(patientId) && isValidPatient(incoming());
+      allow update: if isEmailVerified() && isValidId(patientId) && isValidPatient(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'age', 'condition', 'gender', 'contactEmail']) &&
+        incoming().createdBy == existing().createdBy
+      ) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /appointments/{appointmentId} {
+      allow get, list: if isEmailVerified();
+      allow create: if isEmailVerified() && isValidId(appointmentId) && isValidAppointment(incoming()) &&
+                    exists(/databases/$(database)/documents/patients/$(incoming().patientId)) &&
+                    exists(/databases/$(database)/documents/users/$(incoming().doctorId));
+      allow update: if isEmailVerified() && isValidId(appointmentId) && isValidAppointment(incoming()) && (
+        // Action: Update Status
+        (incoming().diff(existing()).affectedKeys().hasOnly(['status', 'notes']) && 
+         (incoming().doctorId == request.auth.uid || isAdmin())) ||
+        // Action: Full Edit (Admin only or Creator if we had that)
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+  }
+}
