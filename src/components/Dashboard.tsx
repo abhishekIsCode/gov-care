@@ -93,11 +93,9 @@ export default function Dashboard() {
       {/* Sidebar */}
       <aside className="w-64 bg-white border-right border-slate-200 flex flex-col z-30">
         <div className="p-6 flex items-center gap-3">
-          <div className="w-10 h-10 bg-emerald-800 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-800/20">
-            <ShieldCheck className="w-6 h-6 text-white" />
-          </div>
+          <Activity className="w-8 h-8 text-emerald-400 stroke-[2.5]" />
           <div>
-            <h1 className="font-serif text-xl font-bold text-slate-800 leading-none">MediVault</h1>
+            <h1 className="font-serif text-xl font-bold text-slate-800 leading-none">GovCare</h1>
             <p className="text-[10px] text-emerald-800/60 font-bold tracking-widest uppercase mt-1">Provider Edition</p>
           </div>
         </div>

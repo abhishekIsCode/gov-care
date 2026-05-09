@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Shield, Stethoscope, User, LogIn, Lock } from 'lucide-react';
+import { Activity, Stethoscope, User, LogIn, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
@@ -102,16 +102,11 @@ export default function Login() {
         className="relative z-20 w-full max-w-[500px] h-[600px] flex flex-col justify-center bg-white/80 backdrop-blur-xl rounded-[40px] shadow-2xl p-8 md:p-12 border border-white/50"
       >
         <div className="flex flex-col items-center mb-10">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="w-16 h-16 bg-emerald-800 rounded-2xl flex items-center justify-center shadow-lg mb-4"
-          >
-            <Shield className="w-8 h-8 text-white" />
-          </motion.div>
-          <h1 className="font-serif text-4xl font-bold text-slate-800 tracking-tight mb-1">MediVault</h1>
-          <p className="text-emerald-800/60 font-semibold tracking-[0.2em] text-xs uppercase">Healthcare Management</p>
+          <div className="flex items-center gap-4 mb-10">
+            <Activity className="w-12 h-12 text-emerald-400 stroke-[2.5]" />
+            <h1 className="font-serif text-5xl font-bold text-slate-800 tracking-tight">GovCare</h1>
+          </div>
+          <p className="text-emerald-800/60 font-semibold tracking-[0.2em] text-xs uppercase -mt-8 mb-8">Healthcare Management</p>
         </div>
 
         {/* Role Toggle */}
@@ -137,7 +132,7 @@ export default function Login() {
                 : "text-slate-500 hover:text-slate-700 hover:bg-slate-300/30"
             )}
           >
-            <Shield className="w-4 h-4" />
+            <Lock className="w-4 h-4" />
             Admin
           </button>
         </div>
